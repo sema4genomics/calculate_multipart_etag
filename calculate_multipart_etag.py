@@ -36,7 +36,7 @@ def calculate_multipart_etag(source_path, chunk_size, expected=None):
 
     import hashlib
     md5s = []
-
+    new_etag = "d41d8cd98f00b204e9800998ecf8427e" # etag for empty file
     with open(source_path,'rb') as fp:
         while True:
 
@@ -44,15 +44,16 @@ def calculate_multipart_etag(source_path, chunk_size, expected=None):
 
             if not data:
                 break
-            md5s.append(hashlib.md5(data))
-
-    digests = b"".join(m.digest() for m in md5s)
-
-    new_md5 = hashlib.md5(digests)
-    new_etag = '"%s-%s"' % (new_md5.hexdigest(),len(md5s))
+            md5 = hashlib.md5(data)
+            md5s.append(md5)
+            new_etag = '%s' % (md5.hexdigest())
+    if len(md5s) > 1:
+        digests = b"".join(m.digest() for m in md5s)
+        new_md5 = hashlib.md5(digests)
+        new_etag = '%s-%s' % (new_md5.hexdigest(),len(md5s))
     if expected:
         if not expected==new_etag:
-            raise ValueError('new etag %s does not match expected %s' % (new_etag,expected))
+            raise ValueError('%s: new etag %s does not match expected %s' % (source_path, new_etag, expected))
 
     return new_etag
 
@@ -72,7 +73,7 @@ if __name__ == '__main__':
 
 
 	try:
-		expected = '"%s"' % (sys.argv[3])
+		expected = '%s' % (sys.argv[3])
 	except Exception as e:
 		expected = None
 
